@@ -8,6 +8,8 @@ clc
 clear 
 close all 
 
+%% To save fig set this flag to true %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 save_fig = ~true;
 
 upper_xlim = 20;
@@ -18,34 +20,42 @@ suf_fig1 = '-F(8)-DIRECT';
 suf_fig2 = '-DIRECT';
 open_fig_dir = '../figures/paper/exact/';
 
-% % Merge plots for DIRECT and APPROXIMATE solutions of linear problems
-% suf_new_fig = '-F(8)-DIRECT-MGRIT';
-% suf_fig2 = '-F(8)-MGRIT-F(8)-LU-2';
-% suf_fig1 = '-F(8)-DIRECT';
-% %suf_fig3 = '-F(8)-MGRIT-F(8)-NONE-2'; % An example where there's no truncation correction
-% open_fig_dir = '../figures/paper/inexact/';
+% Merge plots for DIRECT and APPROXIMATE solutions of linear problems
+suf_new_fig = '-F(8)-DIRECT-MGRIT';
+suf_fig2 = '-F(8)-MGRIT-F(8)-LU-2';
+suf_fig1 = '-F(8)-DIRECT';
+%suf_fig3 = '-F(8)-MGRIT-F(8)-NONE-2'; % An example where there's no truncation correction
+open_fig_dir = '../figures/paper/inexact/';
 
 % Manyally choose legend location
 leg_loc = 'SouthWest';
 leg_loc = 'NorthEast';
 
-pref = 'B(3)-GLF-lin(1)';  show_y_label = true;  show_legend = true; 
-%pref = 'B(3)-LLF-lin(1)';  show_y_label = true;  show_legend = false;
-pref = 'BL(3)-GLF-lin(1)'; show_y_label = false; show_legend = false;
-pref = 'BL(3)-LLF-lin(1)'; show_y_label = false; show_legend = false;
+%pref = 'B(3)-GLF-lin(1)';  show_y_label = true;  show_legend = true; 
+% pref = 'B(3)-LLF-lin(1)';  show_y_label = true;  show_legend = false;
+% pref = 'BL(3)-GLF-lin(1)'; show_y_label = false; show_legend = false;
+% pref = 'BL(3)-LLF-lin(1)'; show_y_label = false; show_legend = false;
 
-pref = 'B(3)-LLF-WENO(3,P)';  show_y_label = true; show_legend = true; 
-pref = 'B(3)-LLF-WENO(3,N)';  show_y_label = true; show_legend = false;
-pref = 'BL(3)-LLF-WENO(3,P)'; show_y_label = false; show_legend = false;
-pref = 'BL(3)-LLF-WENO(3,N)'; show_y_label = false; show_legend = false;
+% pref = 'B(3)-LLF-WENO(3,P)';  show_y_label = true; show_legend = true; 
+% pref = 'B(3)-LLF-WENO(3,N)';  show_y_label = true; show_legend = false;
+% pref = 'BL(3)-LLF-WENO(3,P)'; show_y_label = false; show_legend = false;
+% pref = 'BL(3)-LLF-WENO(3,N)'; show_y_label = false; show_legend = false;
 
-pref = 'B(3)-GLF-WENO(3,P)';  show_y_label = true; show_legend = true; 
-pref = 'B(3)-GLF-WENO(3,N)';  show_y_label = true; show_legend = false;
-pref = 'BL(3)-GLF-WENO(3,P)'; show_y_label = false; show_legend = false;
-pref = 'BL(3)-GLF-WENO(3,N)'; show_y_label = false; show_legend = false;
+% pref = 'B(3)-GLF-WENO(3,P)';  show_y_label = true; show_legend = true; 
+% pref = 'B(3)-GLF-WENO(3,N)';  show_y_label = true; show_legend = false;
+% pref = 'BL(3)-GLF-WENO(3,P)'; show_y_label = false; show_legend = false;
+% pref = 'BL(3)-GLF-WENO(3,N)'; show_y_label = false; show_legend = false;
+
+%% Supplement figures; ic = 6
+% Burgers
+pref = 'B(6)-LLF-lin(1)';    show_y_label = ~false; show_legend = true;
+pref = 'B(6)-LLF-WENO(3,N)'; show_y_label =  false; show_legend = true;
+% Buckley--Leverett
+pref = 'BL(6)-LLF-lin(1)';    show_y_label = ~false; show_legend = true;
+pref = 'BL(6)-LLF-WENO(3,N)'; show_y_label =  false; show_legend = true;
 
 
-save_fig_name = sprintf('%s/merged/%s%s', open_fig_dir, pref, suf_new_fig);
+save_fig_name = sprintf('%smerged/%s%s', open_fig_dir, pref, suf_new_fig);
 
 fig1_name = sprintf('%s%s%s', open_fig_dir, pref, suf_fig1);
 fh1 = openfig(fig1_name);
@@ -109,8 +119,9 @@ end
 % Save the figure
 function figure_saver(fig, fig_name)
     fig.PaperPositionMode = 'auto';
-    fig_pos = fig.PaperPosition;
-    fig.PaperSize = [fig_pos(3) fig_pos(4)];
+    %fig_pos = fig.PaperPositionMode;
+    %fig.PaperSize = [fig_pos(3) fig_pos(4)]; % Now this gives an error?
+    %set(gcf, 'PaperSize', [fig_pos(3) fig_pos(4)]);
     set(gcf, 'Color', 'w'); % Otherwise saved fig will have grey background
     export_fig(strcat(fig_name, '.png'), '-m4')
     %saveas(gcf, strcat(fig_name, '.fig'));

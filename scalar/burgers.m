@@ -52,13 +52,17 @@ classdef burgers < cons_law_scalar
                     u0(I) = 1;
                     
                 case 4
-                    u0 = 0.25 - 0.75*sin(pi*x) + 0.2*sin(12*pi*x);
+                    u0 = 0.25 - 0.75*sin(pi*x) + 0.2*sin(3*pi*x);
                     
                 case 5    
-                    u0 = 0.5*(sin(2*pi*x) + sin(3*pi*x).^2);
+                    %u0 = 0.5*(sin(2*pi*x) + sin(3*pi*x).^2);
+                    eps = 0.25;
+                    u0 = 0.25 - (0.75 - eps)*sin(2*pi*x) + eps*sin(10*pi*x);
                     
                 case 6
-                    u0 = 0.8 + 0.2*cos(pi*x);
+                    %u0 = 0.8 + 0.2*cos(pi*x);
+
+                    u0 = 0.5 + 0.4*cos(1*pi*x) + 0.1*sin(3*pi*x); 
                     
                 otherwise
                     error('ic_id = %d not recognised', obj.ic_id)

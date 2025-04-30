@@ -34,27 +34,29 @@ initial_iterate = 'nested-iteration-it'; % Interpolate from iterate solution, un
 %initial_iterate = 'rand-pert-of-exact-sol'; rand_pert_mag = 1e-2;
 
 %% linearization parameters
-weno_linearization = 'picard'; % Freezes weights 
+%weno_linearization = 'picard'; % Freezes weights 
 %weno_linearization = 'newton'; % Uses gradient 
 weno_linearization = 'newton-FD-approx'; % Approximates gradient with FD
 
 
 %% Linear solver parameters
 inner_solve_pa.linear_solve = 'direct';
-inner_solve_pa.linear_solve = 'MGRIT';
+%inner_solve_pa.linear_solve = 'MGRIT';
 
 if strcmp(inner_solve_pa.linear_solve, 'MGRIT')
 
 MGRIT_maxiter         = 1; % Maximum number of MGRIT iterations per richardson iteration.
 MGRIT_cf              = outer_solve_pa.cf; % MGRIT coarsening factor. Must be the same as for the outer nonlinear iteration!
-MGRIT_maxlevels       = 2; % MGRIT max levels.
+MGRIT_maxlevels       = 2; % MGRIT max levels. -- TWO-LEVEL
+%MGRIT_maxlevels       = 10; % MGRIT max levels. -- MULTILEVEL
 
 %MGRIT_relax  = 'FCF';
 MGRIT_relax  = 'F';
 %MGRIT_relax  = 'CF';
+% MGRIT_relax = 'F-FCF'; % F-relax on level 1, FCF on all other levels 
 
 MGRIT_res_halt_tol = 0; % MGRIT relative residual halting tol. We want to apply a single MGRIT iteration. We don't care what the residual is.
-MGRIT_verbose      = false;
+MGRIT_verbose      = ~false;
 
 % Choose how coarse BE systems are solved
 %BE_coarse_solver = 'GMRES'; % Further parameters are set below.
@@ -73,20 +75,19 @@ end
 
 
 %% Discretization parameters
-spatial_order = 1;
-spatial_order = 3;
+spatial_order = 1; reconstruction_id = 'linear';
+spatial_order = 3; reconstruction_id = 'WENO';
 
-reconstruction_id = 'linear';
-reconstruction_id = 'WENO';
-
-num_flux_id = 'GLF'; % The most dissipative option, but this is differentiable.
+%num_flux_id = 'GLF'; % The most dissipative option, but this is differentiable.
 num_flux_id = 'LLF'; % The usual local LF flux. NOT differentiable.
 
 
 %nx_array = 2^7;
-%if spatial_order == 1; nx_array = 2.^(5:9); end
-if spatial_order == 1; nx_array = 2.^(5:9); end
-if spatial_order == 3; nx_array = 2.^(5:7); end
+if spatial_order == 1; nx_array = 2.^(5:6); end
+if spatial_order == 1; nx_array = 2.^(5:12); end
+
+if spatial_order == 3; nx_array = 2.^(5:8); end
+if spatial_order == 3; nx_array = 2.^(5:11); end
 %if spatial_order == 3; nx_array = 2.^(7); end
 
 CFL_number = 0.8;
@@ -100,10 +101,12 @@ limit_reconstructions = false;
 pde_id = 'burgers'; 
 %u0_id = 1; tmax = 4; 
 %u0_id = 2; tmax = 4; 
-u0_id = 3; tmax = 4; 
+u0_id = 3; tmax = 4; % Riemann problem.
+%u0_id = 6; tmax = 4; % Cosine + sine 
 
-% pde_id = 'buckley-leverett'; if strcmp(num_flux_id, 'LLF'); limit_reconstructions = true; end
-% u0_id = 3; tmax = 2; % Riemann problem. Two compound waves.
+pde_id = 'buckley-leverett'; if strcmp(num_flux_id, 'LLF'); limit_reconstructions = true; end
+%u0_id = 3; tmax = 2; % Riemann problem. Two compound waves.
+u0_id = 6; tmax = 2; % Cosine + sine 
 
 xmin = -1;
 xmax = 1;
@@ -128,7 +131,15 @@ if strcmp(inner_solve_pa.linear_solve, 'direct')
     end
 elseif strcmp(inner_solve_pa.linear_solve, 'MGRIT')
     plot_pa.ls = '-'; % MGRIT solve is solid line.
+
+    if MGRIT_maxlevels > 2 % Multilevel MGRIT uses dotted lines
+        plot_pa.ls = ':';
+        plot_pa.fig_dir = './figures/paper/inexact/multilevel/';
+    end
 end  
+
+
+
 
 plot_pa.PDE_ic  = false; % Show IC in title
 plot_pa.relax   = false; % Show relax scheme in title
@@ -185,6 +196,13 @@ myMGRIT_solver_params.pre_relax     = MGRIT_relax;
 myMGRIT_solver_params.res_halt_tol  = MGRIT_res_halt_tol;
 myMGRIT_solver_params.min_coarse_nt = 2;
 myMGRIT_solver_params.verbose       = MGRIT_verbose;
+inner_solve_pa.MGRIT_solver_params = myMGRIT_solver_params;
+
+if strcmp(MGRIT_relax, 'FCF')
+    myMGRIT_solver_params.pre_relax = @(level) 'FCF';
+elseif strcmp(MGRIT_relax, 'F-FCF')
+    myMGRIT_solver_params.pre_relax = @(level) F_then_FCF_relax(level);
+end
 end
 
 
@@ -299,6 +317,8 @@ for nx_idx = 1:numel(nx_array)
 
     myMGRIT_object.t = mesh_pa.t;
     myMGRIT_object.block_size = mesh_pa.nx;
+
+    inner_solve_pa.MGRIT_object = myMGRIT_object;
     end
 
     
@@ -392,7 +412,7 @@ toc(tstart_nx_loop)
 
 %% Pretty Richardson conv. plots
 figure(figno+4)
-[plot_title, fig_name] = rich_strings(my_cons_law, disc_pa, pde_pa, outer_solve_pa, linearization_pa, plot_pa);
+[plot_title, fig_name] = rich_strings(my_cons_law, disc_pa, pde_pa, outer_solve_pa, inner_solve_pa, linearization_pa, plot_pa);
 title(plot_title)
 lh = legend();
 lh.set('Location', plot_pa.lh_loc)
@@ -428,3 +448,12 @@ end
 
 % Plot the solution
 [con_fh, cs_hf, figno] = plot_cons_law_scalar_solutions(u, my_cons_law, pde_pa, disc_pa, mesh_pa, figno, plot_pa);
+
+% Implement level-dependent F-FCF MGRIT relaxation
+function nu = F_then_FCF_relax(level)
+    if level == 1 
+        nu = 'F';
+    else
+        nu = 'FCF';
+    end
+end

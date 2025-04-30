@@ -30,7 +30,8 @@ function [con_fig, cs_fig, figno] = plot_cons_law_scalar_solutions(u, cons_law, 
         con_fig  = contour_plot(figno, u, u_title_str, plot_pa); figno = figno+1;    
 
         if isfield(plot_pa, 'save_figs') && plot_pa.save_figs
-            u_save_name = sprintf('%s/%s-con-%s-nx%d', plot_pa.save_dir, cons_law.id, plot_pa.ic_save_str, nx);
+            u_save_name = sprintf('%s/%s(%d)-%s-%d-%s-%d-CONTOUR', ...
+                plot_pa.save_dir, cons_law.id_abbreviation, pde_pa.ic_id, disc_pa.reconstruction_id, disc_pa.spatial_order, disc_pa.num_flux_id, nx);
             figure_saver(figure(con_fig), u_save_name, false);
         end
     end
@@ -39,7 +40,8 @@ function [con_fig, cs_fig, figno] = plot_cons_law_scalar_solutions(u, cons_law, 
         cs_fig  = cross_sec_plot(figno, u, u_title_str, plot_pa); figno = figno+1;
 
         if isfield(plot_pa, 'save_figs') && plot_pa.save_figs
-            u_save_name = sprintf('%s/%s-cs-%s-nx%d', plot_pa.save_dir, cons_law.id, plot_pa.ic_save_str, nx);
+            u_save_name = sprintf('%s/%s(%d)-%s-%d-%s-%d-CROSSSEC', ...
+                plot_pa.save_dir, cons_law.id_abbreviation, pde_pa.ic_id, disc_pa.reconstruction_id, disc_pa.spatial_order, disc_pa.num_flux_id, nx);
             figure_saver(figure(cs_fig), u_save_name, false);
         end
     end

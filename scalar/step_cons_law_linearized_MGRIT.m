@@ -171,7 +171,7 @@ function [u1, MGRIT_object] = step_MOL_linearized_wrapper(u0, step_status, MGRIT
         RK_error = -eRK *(dt * alpha_av).^(qRK+1) * correction.fudge_RK;                          
         
         assert(2*k-1 == qRK, 'implementation assumes these are equal');
-        MGRIT_object.hierarchy(level).error{t0_idx} = RK_error + FV_error;
+        MGRIT_object.hierarchy(level).direct_error{t0_idx} = RK_error + FV_error;
         
         
     % Estimate truncation error using a weighted stencil.
@@ -334,6 +334,7 @@ function [u1, MGRIT_object] = step_SL_modified(u0, step_status, MGRIT_object, my
 
     %% Assemble dissipative backward Euler matrix and it's LU factorization.
     if ~correction.weighted_stencil
+        
         % Sum fine-grid truncation error coefficients across the given 
         % coarse interval. Note: We separate the FV and RK
         % contrubutions because they potentially are associated with
@@ -341,38 +342,31 @@ function [u1, MGRIT_object] = step_SL_modified(u0, step_status, MGRIT_object, my
 
         assert(my_cons_law.disc_pa.spatial_order == my_cons_law.num_RK_stages, 'implementation assumes these are equal');
         
+        % Store error for direct method
+        direct_error = error_SL_coarse;
+        MGRIT_object.hierarchy(level).direct_error{t0_idx} = direct_error;
+    
+        % Sum "direct" errors from fine grid to get "ideal" error for this level
         ideal_error = 0;
         for i = t0_idx_fine:t1_idx_fine-1
-                ideal_error = ideal_error + MGRIT_object.hierarchy(level-1).error{i};
+            ideal_error = ideal_error + MGRIT_object.hierarchy(level-1).direct_error{i};
         end
+    
+        % Two-level coefficient
+        gamma = direct_error - ideal_error;
         
-        
-        % If an SL method was used on the fine level, accumulate the
-        % associated truncation error coefficients so they can be added
-        % into the correction for the rediscretized SL method.
-        ideal_error_SL = 0;
-        if level > 2
+        % Multilevel coefficient
+        if level == 2
+            nu = gamma;
+        elseif level > 2
+            nu = gamma;
             for i = t0_idx_fine:t1_idx_fine-1
-                ideal_error_SL = ideal_error_SL ...
-                    + MGRIT_object.hierarchy(level-1).error_SL{i};
+                nu = nu + MGRIT_object.hierarchy(level-1).nu{i};
             end
         end
-
-        % Compute the total SL error that needs to be included in the
-        % correction (i.e., the coarse-grid SL error minus the ideal SL 
-        % error). (note the signs are reversed here due to using a BE 
-        % disc such that this means we add in the error from the ideal 
-        % SL method, and we subtract out the coarse-grid SL method's error). 
-        error_SL = error_SL_coarse - ideal_error_SL;
-        % To make it more obvious what's happening here, we could
-        % instead include in the BE matrix below a -ideal_error_SL and 
-        % a +error_SL_coarse, but then on the next level remember that
-        % we have to accumulate all of the terms in the m BE matrices 
-        % from this level, so it's just easier to add these two things
-        % now and store this.
-
+    
         % Store this so it can be accumulated on next level
-        MGRIT_object.hierarchy(level).error_SL{t0_idx} = error_SL;
+        MGRIT_object.hierarchy(level).nu{t0_idx} = nu;
 
 
         % Build and save the spatial discretization operators.
@@ -410,23 +404,17 @@ function [u1, MGRIT_object] = step_SL_modified(u0, step_status, MGRIT_object, my
 
         end
 
-        % Subtract out error contributions from coarse-grid rediscretized
-        % coarse-grid SL method and add in error contributions from m
-        % steps of the fine level method (note the signs are opposite
-        % here due to using a BE disc).
-%         B = MGRIT_object.I ...
-%             + MGRIT_object.D1*((-ideal_error_FV + error_SL).*(MGRIT_object.D_space') ...
-%             - ideal_error_RK.*(MGRIT_object.D_time'));        
-        % End of assembling error correction matrix B.
-        % End of construction of backward Euler matrix.
-        
         B = MGRIT_object.I ...
-            + MGRIT_object.D1*((-ideal_error + error_SL).*(MGRIT_object.D_space_T) );        
-        
+            + MGRIT_object.D1*(( nu ).*(MGRIT_object.D_space_T) );        
+        % End of construction of backward Euler matrix.
 
     %%
     elseif correction.weighted_stencil
         
+        if level > 2
+            error('Multilevel MGRIT not implemented for weighted stencils')
+        end
+
         % Sum fine-grid truncation error coefficients across the given 
         % coarse interval. Note: We separate the FV and RK
         % contrubutions because they potentially are associated with

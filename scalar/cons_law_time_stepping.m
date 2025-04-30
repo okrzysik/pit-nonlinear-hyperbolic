@@ -16,8 +16,8 @@ clc
 %% Plotting stuff
 %%%%%%%%%%%%%%%%%%%%
 figno = 90;
-save_sol_figs = ~true;
-fig_dir = './figures/paper/sol/';
+plot_pa.save_figs = ~true;
+plot_pa.save_dir  = './figures/paper/sol/';
 
 plot_pa.ncon_lvl = 10;
 plot_pa.con_tol  = 1e-3;
@@ -28,7 +28,7 @@ plot_pa.plot_solution_cross_sections = true;
 
 
 %% Discretization parameters
-nx = 2^9;
+nx = 2^10;
 
 spatial_order = 1;
 spatial_order = 3;
@@ -58,10 +58,12 @@ pde_id = 'burgers';
 %u0_id = 1; tmax = 4; 
 %u0_id = 2; tmax = 4; 
 u0_id = 3; tmax = 4; 
+%u0_id = 6; tmax = 4; 
 
 %% Buckley--Leverett
-% pde_id = 'buckley-leverett'; if strcmp(num_flux_id, 'LLF'); limit_reconstructions = true; end
+%pde_id = 'buckley-leverett'; if strcmp(num_flux_id, 'LLF'); limit_reconstructions = true; end
 % u0_id = 3; tmax = 2; % Riemann problem. Two compound waves.
+%u0_id = 6; tmax = 2;
 
 
 %% PDE parameters

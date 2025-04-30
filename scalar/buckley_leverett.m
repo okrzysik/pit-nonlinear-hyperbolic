@@ -42,8 +42,7 @@ classdef buckley_leverett < cons_law_scalar
                     u0(I) = 1;
 
                 case 6
-                    % NOTE: This produces a shock for BL but no rarefaction.
-                    u0 = 0.8 + 0.2*cos(pi*x); 
+                    u0 = 0.5 + 0.4*cos(1*pi*x) + 0.1*sin(3*pi*x); 
                     
                 otherwise
                     error('ic_id = %d not recognised', obj.ic_id)
@@ -86,7 +85,7 @@ classdef buckley_leverett < cons_law_scalar
             I = find(u_left < global_max_loc & global_max_loc < u_right);
             lambda(I) = global_max;
             
-            J = setdiff(1:size(u_left), I);
+            J = setdiff(1:size(u_left, 1), I);
             % Pairs for which both points are on one side or 
             % the other of the global maximum, the function is convex over
             % the associated interval, so we can just do a max.
